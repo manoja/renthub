@@ -1,0 +1,125 @@
+<div class="property-listing-container">
+  <!-- Filters Section -->
+  <div class="filters-section">
+    <div class="filters-header">
+      <h2>Find Your Perfect Property</h2>
+      <button *ngIf="searchQuery || selectedCity || selectedPropertyType" 
+              class="btn-clear" 
+              (click)="clearFilters()">
+        Clear Filters
+      </button>
+    </div>
+
+    <div class="filters-row">
+      <div class="filter-group">
+        <label for="search">Search</label>
+        <input
+          type="text"
+          id="search"
+          [(ngModel)]="searchQuery"
+          (change)="onSearchChange()"
+          placeholder="Search by title, address, building name..."
+        />
+      </div>
+
+      <div class="filter-group">
+        <label for="city">City</label>
+        <select id="city" [(ngModel)]="selectedCity" (change)="onCityChange()">
+          <option value="">All Cities</option>
+          <option *ngFor="let city of uniqueCities" [value]="city">{{ city }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="type">Property Type</label>
+        <select id="type" [(ngModel)]="selectedPropertyType" (change)="onPropertyTypeChange()">
+          <option value="">All Types</option>
+          <option *ngFor="let type of propertyTypes" [value]="type">{{ type }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="sort">Sort By</label>
+        <select id="sort" [(ngModel)]="sortBy" (change)="onSortChange()">
+          <option value="recent">Most Recent</option>
+          <option value="price_asc">Price: Low to High</option>
+          <option value="price_desc">Price: High to Low</option>
+          <option value="area_asc">Area: Small to Large</option>
+          <option value="area_desc">Area: Large to Small</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="results-info">
+      <p>{{ filteredProperties.length }} properties found</p>
+    </div>
+  </div>
+
+  <!-- Properties Grid -->
+  <div *ngIf="filteredProperties.length > 0" class="properties-grid">
+    <div
+      *ngFor="let property of filteredProperties; trackBy: trackByPropertyId"
+      class="property-card"
+      (click)="onViewProperty(property.id)"
+    >
+      <div class="card-image">
+        <img *ngIf="property.photos && property.photos.length > 0" [src]="property.photos[0]" [alt]="property.title" />
+        <div *ngIf="!property.photos || property.photos.length === 0" class="no-image">📷 No Photo</div>
+        <button
+          class="btn-favorite"
+          [class.active]="isFavorite(property.id)"
+          (click)="toggleFavorite(property.id, $event)"
+          title="Add to favorites"
+        >
+          ♥
+        </button>
+      </div>
+
+      <div class="card-content">
+        <h3>{{ property.title }}</h3>
+        <p class="location">📍 {{ property.city }}, {{ property.state }}</p>
+
+        <div class="property-meta">
+          <div class="meta-item">
+            <span class="label">Type</span>
+            <span class="value">{{ property.propertyType }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="label">Area</span>
+            <span class="value">{{ property.area }} sq ft</span>
+          </div>
+          <div class="meta-item">
+            <span class="label">Lease</span>
+            <span class="value">{{ property.leaseType }}</span>
+          </div>
+        </div>
+
+        <div class="rent-section">
+          <p class="rent">₹{{ property.expectedRent | number: '1.0-0' }}/{{ property.priceMode }}</p>
+          <p *ngIf="property.negotiable" class="negotiable">Negotiable</p>
+        </div>
+
+        <p class="description">{{ property.description | slice: 0:80 }}...</p>
+
+        <div class="amenities" *ngIf="property.amenities.length > 0">
+          <span *ngFor="let amenity of property.amenities | slice: 0:2" class="amenity-tag">
+            {{ amenity }}
+          </span>
+          <span *ngIf="property.amenities.length > 2" class="amenity-more">
+            +{{ property.amenities.length - 2 }} more
+          </span>
+        </div>
+
+        <button class="btn btn-primary btn-full">View Details</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- No Results -->
+  <div *ngIf="filteredProperties.length === 0" class="no-results">
+    <div class="no-results-icon">🔍</div>
+    <h3>No Properties Found</h3>
+    <p>Try adjusting your filters or search terms</p>
+    <button class="btn btn-primary" (click)="clearFilters()">Clear All Filters</button>
+  </div>
+</div>

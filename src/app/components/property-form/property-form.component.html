@@ -1,0 +1,447 @@
+<div class="property-form-container">
+  <h2>{{ property ? 'Edit Property' : 'Create New Listing' }}</h2>
+
+  <!-- Preview Mode -->
+  <div *ngIf="showPreview" class="preview-mode">
+    <div class="preview-header">
+      <h3>Preview Your Listing</h3>
+      <p>Review the details below before submitting</p>
+    </div>
+
+    <div class="preview-content">
+      <!-- Photos Gallery -->
+      <div class="preview-photos">
+        <h4>Photos</h4>
+        <div class="photos-gallery">
+          <div *ngFor="let photo of formData.photos; let i = index" class="photo-item">
+            <img [src]="photo" [alt]="'Photo ' + (i + 1)" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Property Details -->
+      <div class="preview-section">
+        <h4>Property Details</h4>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <label>Title:</label>
+            <p>{{ formData.title }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Property Type:</label>
+            <p>{{ formData.propertyType }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Building Name:</label>
+            <p>{{ formData.buildingName }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Address:</label>
+            <p>{{ formData.address }}, {{ formData.city }}, {{ formData.state }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Area:</label>
+            <p>{{ formData.area }} sq ft</p>
+          </div>
+          <div class="detail-item">
+            <label>Shared:</label>
+            <p>{{ formData.sharedStatus ? 'Yes' : 'No' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rental Information -->
+      <div class="preview-section">
+        <h4>Rental Information</h4>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <label>Expected Rent:</label>
+            <p>₹{{ formData.expectedRent }}/{{ formData.priceMode }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Negotiable:</label>
+            <p>{{ formData.negotiable ? 'Yes' : 'No' }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Lease Type:</label>
+            <p>{{ formData.leaseType }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Furnished Status:</label>
+            <p>{{ formData.furnishedStatus }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Vegetarian Preference:</label>
+            <p>{{ formData.vegetarianPreference ? 'Yes' : 'No' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Amenities -->
+      <div class="preview-section" *ngIf="formData.amenities.length > 0">
+        <h4>Amenities</h4>
+        <div class="amenities-list">
+          <span *ngFor="let amenity of formData.amenities" class="amenity-tag">
+            {{ amenity }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="preview-section">
+        <h4>Description</h4>
+        <p class="description-text">{{ formData.description }}</p>
+      </div>
+
+      <!-- Landlord Details -->
+      <div class="preview-section">
+        <h4>Landlord Contact Details</h4>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <label>Name:</label>
+            <p>{{ formData.landlordName }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Email:</label>
+            <p>{{ formData.landlordEmail }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Phone:</label>
+            <p>{{ formData.landlordPhone }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-actions">
+      <button class="btn btn-secondary" (click)="editForm()">Edit</button>
+      <button class="btn btn-primary" (click)="confirmSubmit()">Confirm Submit</button>
+    </div>
+  </div>
+
+  <!-- Form Mode -->
+  <div *ngIf="!showPreview" class="form-mode">
+    <form (ngSubmit)="showFormPreview()">
+      <!-- Title and Description -->
+      <div class="form-section">
+        <h3>Basic Information</h3>
+
+        <div class="form-group">
+          <label for="title">Title *</label>
+          <input
+            type="text"
+            id="title"
+            [(ngModel)]="formData.title"
+            (ngModelChange)="formData.title = $event"
+            name="title"
+            placeholder="e.g., Modern 2BHK in Prime Location"
+            required
+          />
+          <span *ngIf="validationErrors['title']" class="error">{{ validationErrors['title'] }}</span>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description *</label>
+          <textarea
+            id="description"
+            [(ngModel)]="formData.description"
+            (change)="onDescriptionChange()"
+            (ngModelChange)="formData.description = $event"
+            name="description"
+            placeholder="Describe your property..."
+            rows="6"
+            [maxlength]="maxDescriptionChars"
+          ></textarea>
+          <div class="char-count">{{ descriptionChars }}/{{ maxDescriptionChars }}</div>
+          <span *ngIf="validationErrors['description']" class="error">{{
+            validationErrors['description']
+          }}</span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="propertyType">Property Type *</label>
+            <select id="propertyType" [(ngModel)]="formData.propertyType" (ngModelChange)="formData.propertyType = $event" name="propertyType">
+              <option *ngFor="let type of propertyTypeOptions" [value]="type">
+                {{ type }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="leaseType">Lease Type *</label>
+            <select id="leaseType" [(ngModel)]="formData.leaseType" (ngModelChange)="formData.leaseType = $event" name="leaseType">
+              <option *ngFor="let type of leaseTypeOptions" [value]="type">{{ type }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Location Details -->
+      <div class="form-section">
+        <h3>Location & Property Details</h3>
+
+        <div class="form-group">
+          <label for="buildingName">Building Name *</label>
+          <input
+            type="text"
+            id="buildingName"
+            [(ngModel)]="formData.buildingName"
+            (ngModelChange)="formData.buildingName = $event"
+            name="buildingName"
+            placeholder="e.g., Skyline Heights"
+            required
+          />
+          <span *ngIf="validationErrors['buildingName']" class="error">{{
+            validationErrors['buildingName']
+          }}</span>
+        </div>
+
+        <div class="form-group">
+          <label for="address">Address *</label>
+          <input
+            type="text"
+            id="address"
+            [(ngModel)]="formData.address"
+            (ngModelChange)="formData.address = $event"
+            name="address"
+            placeholder="e.g., 123 Main Street"
+            required
+          />
+          <span *ngIf="validationErrors['address']" class="error">{{ validationErrors['address'] }}</span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="city">City *</label>
+            <input
+              type="text"
+              id="city"
+              [(ngModel)]="formData.city"
+              (ngModelChange)="formData.city = $event"
+              name="city"
+              placeholder="e.g., Pune"
+              required
+            />
+            <span *ngIf="validationErrors['city']" class="error">{{ validationErrors['city'] }}</span>
+          </div>
+
+          <div class="form-group">
+            <label for="state">State *</label>
+            <input
+              type="text"
+              id="state"
+              [(ngModel)]="formData.state"
+              (ngModelChange)="formData.state = $event"
+              name="state"
+              placeholder="e.g., Maharashtra"
+              required
+            />
+            <span *ngIf="validationErrors['state']" class="error">{{ validationErrors['state'] }}</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="area">Area (sq ft) *</label>
+            <input
+              type="number"
+              id="area"
+              [(ngModel)]="formData.area"
+              (ngModelChange)="formData.area = $event"
+              name="area"
+              placeholder="e.g., 1200"
+              required
+              min="0"
+            />
+            <span *ngIf="validationErrors['area']" class="error">{{ validationErrors['area'] }}</span>
+          </div>
+
+          <div class="form-group">
+            <label>
+              <input type="checkbox" [(ngModel)]="formData.sharedStatus" (ngModelChange)="formData.sharedStatus = $event" name="sharedStatus" />
+              Shared Property
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rental Information -->
+      <div class="form-section">
+        <h3>Rental Information</h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="expectedRent">Expected Rent *</label>
+            <input
+              type="number"
+              id="expectedRent"
+              [(ngModel)]="formData.expectedRent"
+              (ngModelChange)="formData.expectedRent = $event"
+              name="expectedRent"
+              placeholder="e.g., 25000"
+              required
+              min="0"
+            />
+            <span *ngIf="validationErrors['expectedRent']" class="error">{{
+              validationErrors['expectedRent']
+            }}</span>
+          </div>
+
+          <div class="form-group">
+            <label for="priceMode">Price Mode *</label>
+            <select id="priceMode" [(ngModel)]="formData.priceMode" (ngModelChange)="formData.priceMode = $event" name="priceMode">
+              <option *ngFor="let mode of priceOptions" [value]="mode">{{ mode }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="furnishedStatus">Furnished Status *</label>
+            <select id="furnishedStatus" [(ngModel)]="formData.furnishedStatus" (ngModelChange)="formData.furnishedStatus = $event" name="furnishedStatus">
+              <option *ngFor="let type of leaseTypeOptions" [value]="type">{{ type }}</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>
+              <input
+                type="checkbox"
+                [(ngModel)]="formData.negotiable"
+                (ngModelChange)="formData.negotiable = $event"
+                name="negotiable"
+              />
+              Negotiable
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>
+            <input
+              type="checkbox"
+              [(ngModel)]="formData.vegetarianPreference"
+              (ngModelChange)="formData.vegetarianPreference = $event"
+              name="vegetarianPreference"
+            />
+            Vegetarian Preference
+          </label>
+        </div>
+      </div>
+
+      <!-- Amenities -->
+      <div class="form-section">
+        <h3>Amenities</h3>
+        <div class="amenities-grid">
+          <div *ngFor="let amenity of amenityOptions" class="amenity-checkbox">
+            <input
+              type="checkbox"
+              [id]="'amenity_' + amenity"
+              [checked]="isAmenitySelected(amenity)"
+              (change)="toggleAmenity(amenity)"
+            />
+            <label [for]="'amenity_' + amenity">{{ amenity }}</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Photos -->
+      <div class="form-section">
+        <h3>Photos *</h3>
+        <div class="photo-upload">
+          <label for="photos" class="upload-label">
+            <span>📸 Select Photos</span>
+            <small>Supported: JPEG, PNG, WebP (Max 5MB each)</small>
+          </label>
+          <input
+            type="file"
+            id="photos"
+            multiple
+            accept="image/jpeg,image/png,image/webp"
+            (change)="onPhotoSelected($event)"
+          />
+          <span *ngIf="validationErrors['photos']" class="error">{{ validationErrors['photos'] }}</span>
+        </div>
+
+        <div class="photos-preview" *ngIf="formData.photos.length > 0">
+          <h4>Uploaded Photos ({{ formData.photos.length }})</h4>
+          <div class="photos-list">
+            <div *ngFor="let photo of formData.photos; let i = index" class="photo-item">
+              <img [src]="photo" [alt]="'Photo ' + (i + 1)" />
+              <button
+                type="button"
+                class="btn-remove"
+                (click)="removePhoto(i)"
+                title="Remove photo"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Landlord Details -->
+      <div class="form-section">
+        <h3>Landlord Contact Details</h3>
+
+        <div class="form-group">
+          <label for="landlordName">Name *</label>
+          <input
+            type="text"
+            id="landlordName"
+            [(ngModel)]="formData.landlordName"
+            (ngModelChange)="formData.landlordName = $event"
+            name="landlordName"
+            placeholder="e.g., John Doe"
+            required
+          />
+          <span *ngIf="validationErrors['landlordName']" class="error">{{
+            validationErrors['landlordName']
+          }}</span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="landlordEmail">Email *</label>
+            <input
+              type="email"
+              id="landlordEmail"
+              [(ngModel)]="formData.landlordEmail"
+              (ngModelChange)="formData.landlordEmail = $event"
+              name="landlordEmail"
+              placeholder="e.g., john@example.com"
+              required
+            />
+            <span *ngIf="validationErrors['landlordEmail']" class="error">{{
+              validationErrors['landlordEmail']
+            }}</span>
+          </div>
+
+          <div class="form-group">
+            <label for="landlordPhone">Phone *</label>
+            <input
+              type="tel"
+              id="landlordPhone"
+              [(ngModel)]="formData.landlordPhone"
+              (ngModelChange)="formData.landlordPhone = $event"
+              name="landlordPhone"
+              placeholder="e.g., +91 9876543210"
+              required
+            />
+            <span *ngIf="validationErrors['landlordPhone']" class="error">{{
+              validationErrors['landlordPhone']
+            }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="onCancel()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Preview & Submit</button>
+      </div>
+    </form>
+  </div>
+</div>

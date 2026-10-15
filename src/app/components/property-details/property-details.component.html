@@ -1,0 +1,299 @@
+<div *ngIf="property" class="property-details-container">
+  <!-- Header with Back Button -->
+  <div class="details-header">
+    <button class="btn-back" (click)="onBack()">← Back</button>
+    <button class="btn-favorite" [class.active]="isFavorite" (click)="toggleFavorite()">
+      ♥ {{ isFavorite ? 'Saved' : 'Save' }}
+    </button>
+  </div>
+
+  <!-- Photo Gallery -->
+  <div class="photo-gallery">
+    <div class="main-photo">
+      <img *ngIf="property.photos && property.photos.length > 0" [src]="property.photos[currentPhotoIndex]" [alt]="property.title" />
+      <div *ngIf="!property.photos || property.photos.length === 0" class="no-photos">📷 No Photos Available</div>
+      <div *ngIf="property.photos && property.photos.length > 0" class="photo-controls">
+        <button *ngIf="currentPhotoIndex > 0" class="nav-btn prev" (click)="prevPhoto()">
+          ❮
+        </button>
+        <button
+          *ngIf="currentPhotoIndex < property.photos.length - 1"
+          class="nav-btn next"
+          (click)="nextPhoto()"
+        >
+          ❯
+        </button>
+      </div>
+      <div class="photo-counter">
+        <span *ngIf="property.photos && property.photos.length > 0">{{ currentPhotoIndex + 1 }}/{{ property.photos.length }}</span>
+      </div>
+    </div>
+
+    <!-- Thumbnails -->
+    <div *ngIf="property.photos && property.photos.length > 0" class="thumbnails">
+      <button
+        *ngFor="let photo of property.photos; let i = index"
+        class="thumbnail"
+        [class.active]="i === currentPhotoIndex"
+        (click)="goToPhoto(i)"
+      >
+        <img [src]="photo" [alt]="'Photo ' + (i + 1)" />
+      </button>
+    </div>
+  </div>
+
+  <!-- Property Info Grid -->
+  <div class="info-grid">
+    <div class="info-main">
+      <!-- Title and Basics -->
+      <div class="section">
+        <h1>{{ property.title }}</h1>
+        <p class="location">
+          📍 {{ property.address }}, {{ property.city }}, {{ property.state }}
+        </p>
+
+        <!-- Quick Info Cards -->
+        <div class="quick-info">
+          <div class="info-card">
+            <span class="label">Property Type</span>
+            <span class="value">{{ property.propertyType }}</span>
+          </div>
+          <div class="info-card">
+            <span class="label">Area</span>
+            <span class="value">{{ property.area }} sq ft</span>
+          </div>
+          <div class="info-card">
+            <span class="label">Lease Type</span>
+            <span class="value">{{ property.leaseType }}</span>
+          </div>
+          <div class="info-card">
+            <span class="label">Furnished</span>
+            <span class="value">{{ property.furnishedStatus }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rent Information -->
+      <div class="section">
+        <h2>Rental Information</h2>
+        <div class="rent-box">
+          <div class="rent-amount">
+            ₹{{ property.expectedRent | number: '1.0-0' }}<span class="period">/{{ property.priceMode }}</span>
+          </div>
+          <p *ngIf="property.negotiable" class="negotiable">Negotiable</p>
+        </div>
+
+        <div class="rental-details">
+          <div class="detail-item">
+            <span class="label">Building Name:</span>
+            <span>{{ property.buildingName }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Shared Property:</span>
+            <span>{{ property.sharedStatus ? 'Yes' : 'No' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Vegetarian Preference:</span>
+            <span>{{ property.vegetarianPreference ? 'Yes' : 'No' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Amenities -->
+      <div class="section" *ngIf="property.amenities.length > 0">
+        <h2>Amenities</h2>
+        <div class="amenities-list">
+          <div *ngFor="let amenity of property.amenities" class="amenity-item">
+            <span class="amenity-icon">✓</span>
+            <span>{{ amenity }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="section">
+        <h2>Description</h2>
+        <p class="description">{{ property.description }}</p>
+      </div>
+
+      <!-- Comments Section -->
+      <div class="section comments-section">
+        <h2>Comments & Discussion</h2>
+
+        <!-- Add Comment Form -->
+        <div *ngIf="currentUser" class="add-comment-form">
+          <textarea
+            [(ngModel)]="newCommentContent"
+            (ngModelChange)="newCommentContent = $event"
+            name="newComment"
+            placeholder="Share your thoughts about this property..."
+            rows="3"
+          ></textarea>
+          <div class="form-actions">
+            <span *ngIf="newCommentError" class="error">{{ newCommentError }}</span>
+            <button class="btn btn-primary" (click)="submitComment()">Post Comment</button>
+          </div>
+        </div>
+
+        <p *ngIf="!currentUser" class="login-prompt">Please log in to add comments</p>
+
+        <!-- Comments List -->
+        <div class="comments-list">
+          <div
+            *ngFor="let comment of comments | slice: 0:undefined"
+            class="comment"
+            [class.root]="!comment.parentCommentId"
+          >
+            <div class="comment-header">
+              <span class="author">{{ comment.userName }}</span>
+              <span class="timestamp">{{ formatDate(comment.createdAt) }}</span>
+            </div>
+            <p class="comment-content">{{ comment.content }}</p>
+            <div class="comment-actions">
+              <button
+                *ngIf="comment.userId === currentUser?.id"
+                class="btn-delete"
+                (click)="deleteComment(comment.id)"
+              >
+                Delete
+              </button>
+              <button
+                *ngIf="!comment.parentCommentId"
+                class="btn-reply"
+                (click)="replyingToCommentId = comment.id"
+              >
+                Reply
+              </button>
+            </div>
+
+            <!-- Reply Form -->
+            <div *ngIf="replyingToCommentId === comment.id && currentUser" class="reply-form">
+              <textarea
+                [(ngModel)]="replyContent"
+                (ngModelChange)="replyContent = $event"
+                name="replyContent"
+                placeholder="Write a reply..."
+                rows="2"
+              ></textarea>
+              <div class="form-actions">
+                <button
+                  class="btn btn-secondary"
+                  (click)="replyingToCommentId = null"
+                >
+                  Cancel
+                </button>
+                <button
+                  class="btn btn-primary"
+                  (click)="submitReply(comment.id)"
+                >
+                  Reply
+                </button>
+              </div>
+            </div>
+
+            <!-- Replies -->
+            <div *ngIf="getReplies(comment.id).length > 0" class="replies-section">
+              <button class="toggle-replies" (click)="toggleReplies(comment.id)">
+                {{ expandedCommentReplies.has(comment.id) ? '▼' : '▶' }}
+                {{ getReplies(comment.id).length }} Reply/Replies
+              </button>
+
+              <div *ngIf="expandedCommentReplies.has(comment.id)" class="replies">
+                <div *ngFor="let reply of getReplies(comment.id)" class="reply">
+                  <div class="comment-header">
+                    <span class="author">{{ reply.userName }}</span>
+                    <span class="timestamp">{{ formatDate(reply.createdAt) }}</span>
+                  </div>
+                  <p class="comment-content">{{ reply.content }}</p>
+                  <div class="comment-actions">
+                    <button
+                      *ngIf="reply.userId === currentUser?.id"
+                      class="btn-delete"
+                      (click)="deleteComment(reply.id)"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p *ngIf="comments.length === 0" class="no-comments">No comments yet. Be the first to comment!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <!-- Landlord Details Card -->
+      <div class="card landlord-card">
+        <h3>Landlord Contact</h3>
+        <div class="landlord-info">
+          <p>
+            <strong>{{ property.landlordName }}</strong>
+          </p>
+          <p>
+            <span class="label">Email:</span>
+            <a [href]="'mailto:' + property.landlordEmail">{{ property.landlordEmail }}</a>
+          </p>
+          <p>
+            <span class="label">Phone:</span>
+            <a [href]="'tel:' + property.landlordPhone">{{ property.landlordPhone }}</a>
+          </p>
+        </div>
+      </div>
+
+      <!-- Demo Inquiry Card -->
+      <div class="card inquiry-card">
+        <h3>Request Demo</h3>
+
+        <div *ngIf="inquirySuccess" class="success-message">{{ inquirySuccess }}</div>
+        <div *ngIf="inquiryError" class="error-message">{{ inquiryError }}</div>
+
+        <div *ngIf="currentUser" class="inquiry-form">
+          <div class="form-group">
+            <label for="phone">Phone *</label>
+            <input
+              type="tel"
+              id="phone"
+              [(ngModel)]="inquiryPhone"
+              placeholder="+91 9876543210"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="message">Message *</label>
+            <textarea
+              id="message"
+              [(ngModel)]="inquiryMessage"
+              placeholder="Tell the landlord why you're interested..."
+              rows="3"
+            ></textarea>
+          </div>
+
+          <button class="btn btn-primary btn-full" (click)="submitDemoInquiry()">
+            Send Inquiry
+          </button>
+        </div>
+
+        <p *ngIf="!currentUser" class="login-prompt">Please log in to send demo inquiry</p>
+
+        <!-- Inquiries from Current User -->
+        <div *ngIf="currentUser && demoInquiries.length > 0" class="user-inquiries">
+          <h4>Your Inquiries</h4>
+          <div *ngFor="let inquiry of demoInquiries" class="inquiry-item">
+            <p class="status" [class]="inquiry.status">{{ inquiry.status }}</p>
+            <p class="message">{{ inquiry.message }}</p>
+            <small>{{ formatDate(inquiry.createdAt) }}</small>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div *ngIf="!property" class="property-not-found">
+  <p>Property not found</p>
+  <button class="btn btn-primary" (click)="onBack()">Go Back</button>
+</div>

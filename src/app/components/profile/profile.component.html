@@ -1,0 +1,84 @@
+<div class="profile-container">
+  <div class="profile-header">
+    <button class="btn-back" (click)="onBack()">← Back to Home</button>
+    <h1>My Profile</h1>
+  </div>
+
+  <div *ngIf="currentUser" class="profile-content">
+    <!-- User Info Card -->
+    <div class="user-info-card">
+      <div class="user-header">
+        <div class="user-avatar">{{ currentUser.name.charAt(0).toUpperCase() }}</div>
+        <div class="user-details">
+          <h2>{{ currentUser.name }}</h2>
+          <p>{{ currentUser.email }}</p>
+        </div>
+      </div>
+
+      <!-- Quick Links -->
+      <div class="quick-links">
+        <button class="quick-link-btn" (click)="onViewFavorites()">
+          <span class="icon">♥</span>
+          <span class="text">
+            Saved Properties
+            <small>{{ favoriteCount }}</small>
+          </span>
+        </button>
+        <button class="quick-link-btn" (click)="onCreateListing()">
+          <span class="icon">+</span>
+          <span class="text">Create New Listing</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- My Listings Section -->
+    <div class="listings-section">
+      <div class="section-header">
+        <h3>My Listings</h3>
+        <span class="count">{{ userListings.length }}</span>
+      </div>
+
+      <div *ngIf="userListings.length === 0" class="empty-state">
+        <p>You haven't created any listings yet.</p>
+        <button class="btn btn-primary" (click)="onCreateListing()">Create Your First Listing</button>
+      </div>
+
+      <div *ngIf="userListings.length > 0" class="listings-grid">
+        <div *ngFor="let listing of userListings" class="listing-card">
+          <div class="listing-image">
+            <img *ngIf="listing.photos && listing.photos.length > 0" [src]="listing.photos[0]" [alt]="listing.title" />
+            <div *ngIf="!listing.photos || listing.photos.length === 0" class="no-image">📷 No Photo</div>
+            <div class="listing-overlay">
+              <button class="btn-small edit" (click)="onEditListing(listing.id)">Edit</button>
+              <button class="btn-small delete" (click)="deleteListing(listing.id)">Delete</button>
+            </div>
+          </div>
+
+          <div class="listing-content">
+            <h4>{{ listing.title }}</h4>
+            <p class="location">📍 {{ listing.city }}, {{ listing.state }}</p>
+
+            <div class="listing-meta">
+              <div class="meta-item">
+                <span class="label">Rent</span>
+                <span class="value">₹{{ listing.expectedRent | number: '1.0-0' }}/{{ listing.priceMode }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="label">Type</span>
+                <span class="value">{{ listing.propertyType }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="label">Area</span>
+                <span class="value">{{ listing.area }} sq ft</span>
+              </div>
+            </div>
+
+            <button class="btn btn-secondary btn-full" (click)="onViewProperty(listing.id)">
+              View Details
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

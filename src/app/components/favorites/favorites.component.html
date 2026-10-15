@@ -1,0 +1,69 @@
+<div class="favorites-container">
+  <div class="favorites-header">
+    <h1>Saved Properties</h1>
+    <button class="btn-back" (click)="onBack()">← Back</button>
+  </div>
+
+  <div *ngIf="!loading && favorites.length === 0" class="empty-state">
+    <div class="empty-icon">💔</div>
+    <h2>No Saved Properties Yet</h2>
+    <p>Start exploring properties and save your favorites!</p>
+    <button class="btn btn-primary" (click)="onBack()">Browse Properties</button>
+  </div>
+
+  <div *ngIf="!loading && favorites.length > 0" class="favorites-grid">
+    <div *ngFor="let favorite of favorites" class="favorite-card">
+      <div *ngIf="getPropertyDetails(favorite.propertyId) as property" class="property-card">
+        <!-- Image -->
+        <div class="card-image">
+          <img *ngIf="property.photos && property.photos.length > 0" [src]="property.photos[0]" [alt]="property.title" />
+          <div *ngIf="!property.photos || property.photos.length === 0" class="no-image">📷 No Photo</div>
+          <button class="btn-remove" (click)="removeFavorite(property.id)" title="Remove from favorites">
+            ✕
+          </button>
+        </div>
+
+        <!-- Content -->
+        <div class="card-content">
+          <h3>{{ property.title }}</h3>
+          <p class="location">📍 {{ property.city }}, {{ property.state }}</p>
+
+          <div class="property-info">
+            <div class="info-item">
+              <span class="label">Type</span>
+              <span class="value">{{ property.propertyType }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Area</span>
+              <span class="value">{{ property.area }} sq ft</span>
+            </div>
+          </div>
+
+          <div class="rent-section">
+            <p class="rent">₹{{ property.expectedRent | number: '1.0-0' }}/{{ property.priceMode }}</p>
+            <p *ngIf="property.negotiable" class="negotiable">Negotiable</p>
+          </div>
+
+          <p class="description">{{ property.description | slice: 0:100 }}...</p>
+
+          <div class="amenities" *ngIf="property.amenities.length > 0">
+            <span *ngFor="let amenity of property.amenities | slice: 0:3" class="amenity-tag">
+              {{ amenity }}
+            </span>
+            <span *ngIf="property.amenities.length > 3" class="amenity-more">
+              +{{ property.amenities.length - 3 }} more
+            </span>
+          </div>
+
+          <button class="btn btn-primary btn-full" (click)="onViewProperty(property.id)">
+            View Details
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <p>Loading favorites...</p>
+  </div>
+</div>
