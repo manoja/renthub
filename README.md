@@ -115,13 +115,13 @@ https://renthubbasic.netlify.app/
 
 ### Test Account 1
 ```
-Email: john@example.com
+Email: john.doe@gmail.com
 Password: Test@123
 ```
 
 ### Test Account 2 
 ```
-Email: manoja.nagarro@gmail.com
+Email: manoja.nagarro@hotmail.com
 Password: Test@123
 ```
 
