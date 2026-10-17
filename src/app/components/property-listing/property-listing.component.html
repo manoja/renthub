@@ -17,14 +17,14 @@
           type="text"
           id="search"
           [(ngModel)]="searchQuery"
-          (change)="onSearchChange()"
+          (ngModelChange)="onSearchChange()"
           placeholder="Search by title, address, building name..."
         />
       </div>
 
       <div class="filter-group">
         <label for="city">City</label>
-        <select id="city" [(ngModel)]="selectedCity" (change)="onCityChange()">
+        <select id="city" [(ngModel)]="selectedCity" (ngModelChange)="onCityChange()">
           <option value="">All Cities</option>
           <option *ngFor="let city of uniqueCities" [value]="city">{{ city }}</option>
         </select>
@@ -32,7 +32,7 @@
 
       <div class="filter-group">
         <label for="type">Property Type</label>
-        <select id="type" [(ngModel)]="selectedPropertyType" (change)="onPropertyTypeChange()">
+        <select id="type" [(ngModel)]="selectedPropertyType" (ngModelChange)="onPropertyTypeChange()">
           <option value="">All Types</option>
           <option *ngFor="let type of propertyTypes" [value]="type">{{ type }}</option>
         </select>
@@ -40,8 +40,9 @@
 
       <div class="filter-group">
         <label for="sort">Sort By</label>
-        <select id="sort" [(ngModel)]="sortBy" (change)="onSortChange()">
+        <select id="sort" [(ngModel)]="sortBy" (ngModelChange)="onSortChange()">
           <option value="recent">Most Recent</option>
+          <option value="favorites">My Favorites</option>
           <option value="price_asc">Price: Low to High</option>
           <option value="price_desc">Price: High to Low</option>
           <option value="area_asc">Area: Small to Large</option>
@@ -106,14 +107,14 @@
             <span class="feature-value">{{ property.furnishedStatus }}</span>
           </div>
           <div class="feature-item">
-            <span class="feature-icon">🚿</span>
-            <span class="feature-label">BATHROOM</span>
-            <span class="feature-value">1</span>
+            <span class="feature-icon">�</span>
+            <span class="feature-label">Lease Type</span>
+            <span class="feature-value">{{ property.leaseType }}</span>
           </div>
           <div class="feature-item">
             <span class="feature-icon">👥</span>
             <span class="feature-label">TENANT PREFERRED</span>
-            <span class="feature-value">Bachelors/Family</span>
+            <span class="feature-value">{{ property.landlordPreference }}</span>
           </div>
         </div>
 
@@ -127,7 +128,7 @@
 
         <!-- Action Buttons -->
         <div class="action-buttons">
-          <button class="btn btn-contact">Contact Owner</button>
+          <button class="btn btn-contact" (click)="openContactModal(property)">Contact Owner</button>
           <button class="btn btn-details" (click)="onViewProperty(property.id)">View Details</button>
         </div>
       </div>
@@ -140,5 +141,41 @@
     <h3>No Properties Found</h3>
     <p>Try adjusting your filters or search terms</p>
     <button class="btn btn-primary" (click)="clearFilters()">Clear All Filters</button>
+  </div>
+
+  <!-- Contact Owner Modal -->
+  <div *ngIf="showContactModal" class="contact-modal-overlay" (click)="closeContactModal()">
+    <div class="contact-modal" (click)="$event.stopPropagation()">
+      <div class="contact-modal-header">
+        <h3>Contact Owner</h3>
+        <button class="close-btn" (click)="closeContactModal()">✕</button>
+      </div>
+      <div class="contact-modal-body" *ngIf="selectedContactProperty">
+        <div class="property-info">
+          <p class="property-name">{{ selectedContactProperty.title }}</p>
+        </div>
+        <div class="contact-details">
+          <div class="contact-item">
+            <span class="contact-label">Owner Name:</span>
+            <span class="contact-value">{{ selectedContactProperty.landlordName }}</span>
+          </div>
+          <div class="contact-item">
+            <span class="contact-label">Email:</span>
+            <a href="mailto:{{ selectedContactProperty.landlordEmail }}" class="contact-value email-link">
+              {{ selectedContactProperty.landlordEmail }}
+            </a>
+          </div>
+          <div class="contact-item">
+            <span class="contact-label">Phone:</span>
+            <a href="tel:{{ selectedContactProperty.landlordPhone }}" class="contact-value phone-link">
+              {{ selectedContactProperty.landlordPhone }}
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="contact-modal-footer">
+        <button class="btn btn-secondary" (click)="closeContactModal()">Close</button>
+      </div>
+    </div>
   </div>
 </div>

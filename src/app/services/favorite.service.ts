@@ -21,6 +21,12 @@ export class FavoriteService {
     return this.favorites$.value.filter(f => f.userId === userId);
   }
 
+  getFavoriteByPropertyAndUser(propertyId: string, userId: number): Favorite | undefined {
+    return this.favorites$.value.find(f => 
+      f.propertyId === propertyId && f.userId === userId
+    );
+  }
+
   isFavorite(propertyId: string, userId: number): boolean {
     return this.favorites$.value.some(f => 
       f.propertyId === propertyId && f.userId === userId

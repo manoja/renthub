@@ -36,6 +36,9 @@ export class PropertyListingComponent implements OnInit {
   favoriteMap: Map<string, boolean> = new Map();
   sanitizedImageCache: Map<string, SafeUrl> = new Map();
 
+  showContactModal: boolean = false;
+  selectedContactProperty: Property | null = null;
+
   constructor(
     private propertyService: PropertyService,
     private favoriteService: FavoriteService,
@@ -72,30 +75,60 @@ export class PropertyListingComponent implements OnInit {
 
   applyFilters(): void {
     let filtered = [...this.allProperties];
+    console.log('🔍 applyFilters() called');
+    console.log('Total properties:', this.allProperties.length);
+    console.log('Search Query:', this.searchQuery);
+    console.log('Selected City:', this.selectedCity);
+    console.log('Selected Property Type:', this.selectedPropertyType);
 
     // Search filter
     if (this.searchQuery.trim()) {
       filtered = this.propertyService.searchProperties(this.searchQuery);
+      console.log('After search filter:', filtered.length);
     }
 
     // City filter
     if (this.selectedCity) {
       filtered = filtered.filter(p => p.city === this.selectedCity);
+      console.log('After city filter:', filtered.length);
     }
 
     // Property type filter
     if (this.selectedPropertyType) {
       filtered = filtered.filter(p => p.propertyType === this.selectedPropertyType);
+      console.log('After property type filter:', filtered.length);
     }
 
     // Sort
     filtered = this.sortProperties(filtered);
+    console.log('Final filtered results:', filtered.length);
 
     this.filteredProperties = filtered;
   }
 
   sortProperties(properties: Property[]): Property[] {
-    const sorted = [...properties];
+    let sorted = [...properties];
+
+    // Handle Favorites filter
+    if (this.sortBy === 'favorites') {
+      if (!this.currentUser) {
+        console.log('⚠️ User not logged in, cannot show favorites');
+        return [];
+      }
+      // Filter to only show favorite properties
+      sorted = sorted.filter(p => this.isFavorite(p.id));
+      console.log('After favorites filter:', sorted.length);
+      // Sort by most recently added to favorites
+      sorted.sort((a, b) => {
+        const aFav = this.favoriteService.getFavoriteByPropertyAndUser(a.id, this.currentUser!.id);
+        const bFav = this.favoriteService.getFavoriteByPropertyAndUser(b.id, this.currentUser!.id);
+        if (aFav && bFav) {
+          return new Date(bFav.addedAt).getTime() - new Date(aFav.addedAt).getTime();
+        }
+        return 0;
+      });
+      return sorted;
+    }
 
     switch (this.sortBy) {
       case 'price_asc':
@@ -119,18 +152,30 @@ export class PropertyListingComponent implements OnInit {
   }
 
   onSearchChange(): void {
+    console.log('🔎 onSearchChange() called, query:', this.searchQuery);
     this.applyFilters();
   }
 
   onCityChange(): void {
+    console.log('🏙️ onCityChange() called, city:', this.selectedCity);
     this.applyFilters();
   }
 
   onPropertyTypeChange(): void {
+    console.log('🏠 onPropertyTypeChange() called, type:', this.selectedPropertyType);
     this.applyFilters();
   }
 
   onSortChange(): void {
+    console.log('📊 onSortChange() called, sortBy:', this.sortBy);
+    if (this.sortBy === 'favorites') {
+      console.log('❤️ Fetching favorite properties for user:', this.currentUser?.id);
+      if (!this.currentUser) {
+        console.log('⚠️ User not logged in');
+        alert('Please login to view your favorite properties');
+        this.sortBy = 'recent';
+      }
+    }
     this.applyFilters();
   }
 
@@ -159,6 +204,16 @@ export class PropertyListingComponent implements OnInit {
 
   onViewProperty(propertyId: string): void {
     this.viewProperty.emit(propertyId);
+  }
+
+  openContactModal(property: Property): void {
+    this.selectedContactProperty = property;
+    this.showContactModal = true;
+  }
+
+  closeContactModal(): void {
+    this.showContactModal = false;
+    this.selectedContactProperty = null;
   }
 
   clearFilters(): void {
