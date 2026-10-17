@@ -1,5 +1,8 @@
 export type PropertyType = 'Apartment' | 'House' | 'Villa' | 'Studio' | 'Penthouse' | 'Townhouse';
-export type LeaseType = 'Furnished' | 'Semi-Furnished' | 'Unfurnished';
+export type LeaseType = 'LongTerm' | 'ShortTerm' | 'Both';
+export type FurnishedStatus = 'Furnished' | 'Semi-Furnished' | 'Unfurnished';
+export type TenantPreference = 'Any' | 'Bachelors' | 'Family';
+
 export type PriceMode = 'Monthly' | 'Yearly';
 export type Amenity = 
   | 'Gym/Fitness Center'
@@ -29,13 +32,14 @@ export interface Property {
   negotiable: boolean;
   leaseType: LeaseType;
   priceMode: PriceMode;
-  furnishedStatus: LeaseType;
+  furnishedStatus: FurnishedStatus;
   vegetarianPreference: boolean;
   amenities: Amenity[];
   title: string;
   description: string; // Max 1,400 characters
   landlordName: string;
   landlordEmail: string;
+  landlordPreference: TenantPreference;
   landlordPhone: string;
   photos: string[]; // Base64 encoded images
   createdAt: Date;
@@ -54,9 +58,10 @@ export interface PropertyFormData {
   negotiable: boolean;
   leaseType: LeaseType;
   priceMode: PriceMode;
-  furnishedStatus: LeaseType;
+  furnishedStatus: FurnishedStatus;
   vegetarianPreference: boolean;
   amenities: Amenity[];
+  landlordPreference: TenantPreference;
   title: string;
   description: string;
   landlordName: string;

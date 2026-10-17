@@ -1,6 +1,7 @@
 import { Component, OnInit, Output, EventEmitter, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { Property } from '../../models/property';
 import { Comment } from '../../models/comment';
 import { DemoInquiry } from '../../models/inquiry';
@@ -42,12 +43,14 @@ export class PropertyDetailsComponent implements OnInit {
   replyingToCommentId: string | null = null;
   replyContent: string = '';
   expandedCommentReplies: Set<string> = new Set();
+  sanitizedImageCache: Map<string, SafeUrl> = new Map();
 
   constructor(
     private propertyService: PropertyService,
     private favoriteService: FavoriteService,
     private commentService: CommentService,
-    private inquiryService: DemoInquiryService
+    private inquiryService: DemoInquiryService,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
@@ -237,5 +240,17 @@ export class PropertyDetailsComponent implements OnInit {
 
   onBack(): void {
     this.back.emit();
+  }
+
+  getSafeImageUrl(imageUrl: string): SafeUrl {
+    // Check if URL is already cached
+    if (this.sanitizedImageCache.has(imageUrl)) {
+      return this.sanitizedImageCache.get(imageUrl)!;
+    }
+
+    // Sanitize and cache the URL
+    const safeUrl = this.sanitizer.bypassSecurityTrustUrl(imageUrl);
+    this.sanitizedImageCache.set(imageUrl, safeUrl);
+    return safeUrl;
   }
 }

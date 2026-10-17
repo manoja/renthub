@@ -60,11 +60,21 @@
     <div
       *ngFor="let property of filteredProperties; trackBy: trackByPropertyId"
       class="property-card"
-      (click)="onViewProperty(property.id)"
     >
+      <!-- Image Section with Photo Count and Favorites -->
       <div class="card-image">
-        <img *ngIf="property.photos && property.photos.length > 0" [src]="property.photos[0]" [alt]="property.title" />
+        <img *ngIf="property.photos && property.photos.length > 0" [src]="getSafeImageUrl(property.photos[0])" [alt]="property.title" />
         <div *ngIf="!property.photos || property.photos.length === 0" class="no-image">📷 No Photo</div>
+        
+        <!-- Photo Count Badge -->
+        <div *ngIf="property.photos && property.photos.length > 0" class="photo-count-badge">
+          {{ property.photos.length }}+ Photos
+        </div>
+
+        <!-- Updated Badge -->
+        <div class="updated-badge">Updated today</div>
+
+        <!-- Favorite Button -->
         <button
           class="btn-favorite"
           [class.active]="isFavorite(property.id)"
@@ -75,42 +85,51 @@
         </button>
       </div>
 
+      <!-- Card Content -->
       <div class="card-content">
-        <h3>{{ property.title }}</h3>
-        <p class="location">📍 {{ property.city }}, {{ property.state }}</p>
-
-        <div class="property-meta">
-          <div class="meta-item">
-            <span class="label">Type</span>
-            <span class="value">{{ property.propertyType }}</span>
+        <!-- Top Row: Title, Price, and Details -->
+        <div class="card-header">
+          <div class="title-section">
+            <h3 class="property-title">{{ property.title }}</h3>
+            <p class="property-area">{{ property.city }}</p>
           </div>
-          <div class="meta-item">
-            <span class="label">Area</span>
-            <span class="value">{{ property.area }} sq ft</span>
-          </div>
-          <div class="meta-item">
-            <span class="label">Lease</span>
-            <span class="value">{{ property.leaseType }}</span>
+          <div class="price-section">
+            <p class="price">₹{{ property.expectedRent | number: '1.0-0' }}</p>
           </div>
         </div>
 
-        <div class="rent-section">
-          <p class="rent">₹{{ property.expectedRent | number: '1.0-0' }}/{{ property.priceMode }}</p>
-          <p *ngIf="property.negotiable" class="negotiable">Negotiable</p>
+        <!-- Property Features Icons Row -->
+        <div class="features-row">
+          <div class="feature-item">
+            <span class="feature-icon">🛏️</span>
+            <span class="feature-label">FURNISHING</span>
+            <span class="feature-value">{{ property.furnishedStatus }}</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-icon">🚿</span>
+            <span class="feature-label">BATHROOM</span>
+            <span class="feature-value">1</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-icon">👥</span>
+            <span class="feature-label">TENANT PREFERRED</span>
+            <span class="feature-value">Bachelors/Family</span>
+          </div>
         </div>
 
-        <p class="description">{{ property.description | slice: 0:80 }}...</p>
+        <!-- Description -->
+        <p class="description">{{ property.description | slice: 0:100 }}...</p>
 
-        <div class="amenities" *ngIf="property.amenities.length > 0">
-          <span *ngFor="let amenity of property.amenities | slice: 0:2" class="amenity-tag">
-            {{ amenity }}
-          </span>
-          <span *ngIf="property.amenities.length > 2" class="amenity-more">
-            +{{ property.amenities.length - 2 }} more
-          </span>
+        <!-- Owner Information -->
+        <div class="owner-info">
+          <p class="owner-label">Owner: <span class="owner-name">{{ property.landlordName }}</span></p>
         </div>
 
-        <button class="btn btn-primary btn-full">View Details</button>
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <button class="btn btn-contact">Contact Owner</button>
+          <button class="btn btn-details" (click)="onViewProperty(property.id)">View Details</button>
+        </div>
       </div>
     </div>
   </div>

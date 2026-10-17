@@ -10,7 +10,7 @@
   <!-- Photo Gallery -->
   <div class="photo-gallery">
     <div class="main-photo">
-      <img *ngIf="property.photos && property.photos.length > 0" [src]="property.photos[currentPhotoIndex]" [alt]="property.title" />
+      <img *ngIf="property.photos && property.photos.length > 0" [src]="getSafeImageUrl(property.photos[currentPhotoIndex])" [alt]="property.title" />
       <div *ngIf="!property.photos || property.photos.length === 0" class="no-photos">📷 No Photos Available</div>
       <div *ngIf="property.photos && property.photos.length > 0" class="photo-controls">
         <button *ngIf="currentPhotoIndex > 0" class="nav-btn prev" (click)="prevPhoto()">
@@ -37,7 +37,7 @@
         [class.active]="i === currentPhotoIndex"
         (click)="goToPhoto(i)"
       >
-        <img [src]="photo" [alt]="'Photo ' + (i + 1)" />
+        <img [src]="getSafeImageUrl(photo)" [alt]="'Photo ' + (i + 1)" />
       </button>
     </div>
   </div>

@@ -1,6 +1,7 @@
 import { Component, OnInit, Output, EventEmitter, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { Property } from '../../models/property';
 import { PropertyService } from '../../services/property.service';
 import { FavoriteService } from '../../services/favorite.service';
@@ -33,10 +34,12 @@ export class PropertyListingComponent implements OnInit {
   propertyTypes: string[] = ['Apartment', 'House', 'Villa', 'Studio', 'Penthouse', 'Townhouse'];
 
   favoriteMap: Map<string, boolean> = new Map();
+  sanitizedImageCache: Map<string, SafeUrl> = new Map();
 
   constructor(
     private propertyService: PropertyService,
-    private favoriteService: FavoriteService
+    private favoriteService: FavoriteService,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
@@ -168,5 +171,17 @@ export class PropertyListingComponent implements OnInit {
 
   trackByPropertyId(index: number, property: Property): string {
     return property.id;
+  }
+
+  getSafeImageUrl(imageUrl: string): SafeUrl {
+    // Check if URL is already cached
+    if (this.sanitizedImageCache.has(imageUrl)) {
+      return this.sanitizedImageCache.get(imageUrl)!;
+    }
+
+    // Sanitize and cache the URL
+    const safeUrl = this.sanitizer.bypassSecurityTrustUrl(imageUrl);
+    this.sanitizedImageCache.set(imageUrl, safeUrl);
+    return safeUrl;
   }
 }

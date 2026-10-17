@@ -74,6 +74,10 @@
             <label>Vegetarian Preference:</label>
             <p>{{ formData.vegetarianPreference ? 'Yes' : 'No' }}</p>
           </div>
+          <div class="detail-item">
+            <label>Tenant Preference:</label>
+            <p>{{ formData.landlordPreference }}</p>
+          </div>
         </div>
       </div>
 
@@ -300,7 +304,7 @@
           <div class="form-group">
             <label for="furnishedStatus">Furnished Status *</label>
             <select id="furnishedStatus" [(ngModel)]="formData.furnishedStatus" (ngModelChange)="formData.furnishedStatus = $event" name="furnishedStatus">
-              <option *ngFor="let type of leaseTypeOptions" [value]="type">{{ type }}</option>
+              <option *ngFor="let type of furnishedOptions" [value]="type">{{ type }}</option>
             </select>
           </div>
 
@@ -327,6 +331,13 @@
             />
             Vegetarian Preference
           </label>
+        </div>
+
+        <div class="form-group">
+          <label for="landlordPreference">Tenant Preference *</label>
+          <select id="landlordPreference" [(ngModel)]="formData.landlordPreference" (ngModelChange)="formData.landlordPreference = $event" name="landlordPreference">
+            <option *ngFor="let pref of tenantPreferenceOptions" [value]="pref">{{ pref }}</option>
+          </select>
         </div>
       </div>
 

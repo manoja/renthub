@@ -1,29 +1,23 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterOutlet } from '@angular/router';
 import { PropertyFormComponent } from './components/property-form/property-form.component';
 import { PropertyDetailsComponent } from './components/property-details/property-details.component';
 import { FavoritesComponent } from './components/favorites/favorites.component';
 import { ProfileComponent } from './components/profile/profile.component';
 import { PropertyListingComponent } from './components/property-listing/property-listing.component';
 import { PropertyFormData } from './models/property';
+import { User } from './models/user';
 import { PropertyService } from './services/property.service';
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  password: string;
-  createdAt: Date;
-}
+import { AuthService } from './services/auth.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
   imports: [
     CommonModule,
     FormsModule,
-    RouterOutlet,
     PropertyFormComponent,
     PropertyDetailsComponent,
     FavoritesComponent,
@@ -33,20 +27,18 @@ interface User {
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
-export class App {
+export class App implements OnInit, OnDestroy {
   protected readonly appTitle = 'RentHub';
 
   // Navigation State
   protected currentPage: 'home' | 'listings' | 'details' | 'favorites' | 'profile' | 'create' | 'edit' =
-    'home';
+    'listings';
   protected selectedPropertyId: string | null = null;
   protected editingPropertyId: string | null = null;
 
   // Authentication State
   protected isAuthenticated: boolean = false;
   protected currentUser: User | null = null;
-  protected users: User[] = [];
-  protected nextUserId: number = 1;
 
   // Auth Modal State
   protected isAuthModalOpen: boolean = false;
@@ -65,8 +57,31 @@ export class App {
   protected registerError: string = '';
   protected registerSuccess: string = '';
 
-  constructor(private propertyService: PropertyService) {
-    this.loadUsersFromStorage();
+  private destroy$ = new Subject<void>();
+
+  constructor(
+    private propertyService: PropertyService,
+    private authService: AuthService
+  ) {}
+
+  ngOnInit(): void {
+    // Subscribe to authentication state from AuthService
+    this.authService.isAuthenticated()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(isAuthenticated => {
+        this.isAuthenticated = isAuthenticated;
+      });
+
+    this.authService.getCurrentUser()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        this.currentUser = user;
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   protected openAuthModal(mode: 'login' | 'register'): void {
@@ -95,17 +110,14 @@ export class App {
       return;
     }
 
-    const user = this.users.find(
-      u => u.email === this.loginEmail && u.password === this.loginPassword
-    );
+    // Use AuthService to login
+    const success = this.authService.login(this.loginEmail, this.loginPassword);
 
-    if (!user) {
+    if (!success) {
       this.loginError = 'Invalid email or password';
       return;
     }
 
-    this.currentUser = user;
-    this.isAuthenticated = true;
     this.closeAuthModal();
   }
 
@@ -117,26 +129,23 @@ export class App {
       return;
     }
 
-    if (this.users.some(u => u.email === this.registerEmail)) {
-      this.registerError = 'Email already registered';
-      return;
-    }
-
     if (this.registerPassword !== this.registerConfirmPassword) {
       this.registerError = 'Passwords do not match';
       return;
     }
 
-    const newUser: User = {
-      id: this.nextUserId++,
-      name: this.registerName,
-      email: this.registerEmail,
-      password: this.registerPassword,
-      createdAt: new Date()
-    };
+    // Use AuthService to register
+    const success = this.authService.register(
+      this.registerName,
+      this.registerEmail,
+      this.registerPassword
+    );
 
-    this.users.push(newUser);
-    this.saveUsersToStorage();
+    if (!success) {
+      this.registerError = 'Email already registered';
+      return;
+    }
+
     this.registerSuccess = 'Account created successfully! Please login.';
 
     setTimeout(() => {
@@ -146,8 +155,7 @@ export class App {
   }
 
   protected handleLogout(): void {
-    this.currentUser = null;
-    this.isAuthenticated = false;
+    this.authService.logout();
     this.resetForms();
     this.currentPage = 'home';
   }
@@ -230,31 +238,6 @@ export class App {
     this.registerSuccess = '';
   }
 
-  private saveUsersToStorage(): void {
-    try {
-      localStorage.setItem('renthub_users', JSON.stringify(this.users));
-      localStorage.setItem('renthub_nextUserId', JSON.stringify(this.nextUserId));
-    } catch (error) {
-      console.error('Error saving users to storage:', error);
-    }
-  }
-
-  private loadUsersFromStorage(): void {
-    try {
-      const usersJson = localStorage.getItem('renthub_users');
-      const nextIdJson = localStorage.getItem('renthub_nextUserId');
-
-      if (usersJson) {
-        this.users = JSON.parse(usersJson);
-      }
-      if (nextIdJson) {
-        this.nextUserId = JSON.parse(nextIdJson);
-      }
-    } catch (error) {
-      console.error('Error loading users from storage:', error);
-    }
-  }
-
   // Navigation Methods
   protected goHome(): void {
     this.currentPage = 'home';
@@ -290,6 +273,13 @@ export class App {
     this.currentPage = 'edit';
   }
 
+  protected getEditingProperty() {
+    if (this.editingPropertyId) {
+      return this.propertyService.getPropertyById(this.editingPropertyId);
+    }
+    return null;
+  }
+
   protected goToPropertyDetails(propertyId: string): void {
     this.selectedPropertyId = propertyId;
     this.currentPage = 'details';
@@ -304,15 +294,40 @@ export class App {
   }
 
   protected handlePropertySubmit(formData: PropertyFormData): void {
-    if (!this.currentUser) return;
+    console.log('📨 handlePropertySubmit() received event');
+    console.log('Event type:', typeof formData);
+    console.log('Event keys:', Object.keys(formData));
+    console.log('Full event:', formData);
+    
+    // Check if this is a native DOM event instead of emitted data
+    if (formData && formData.hasOwnProperty('isTrusted')) {
+      console.log('⚠️  WARNING: Received native DOM event instead of form data!');
+      console.log('This suggests the form submit event is being intercepted.');
+      return;
+    }
+
+    console.log('Current user:', this.currentUser);
+    console.log('Current page:', this.currentPage);
+    console.log('Form data:', JSON.stringify(formData, null, 2));
+
+    if (!this.currentUser) {
+      console.log('❌ No current user! Aborting submission');
+      return;
+    }
 
     if (this.currentPage === 'create') {
-      this.propertyService.createProperty(formData, this.currentUser.id);
+      console.log('📝 Creating new property for user:', this.currentUser.id);
+      const property = this.propertyService.createProperty(formData as any, this.currentUser.id);
+      console.log('✅ Property created:', property);
       this.goToProfile();
     } else if (this.currentPage === 'edit' && this.editingPropertyId) {
-      this.propertyService.updateProperty(this.editingPropertyId, formData, this.currentUser.id);
+      console.log('✏️ Updating property:', this.editingPropertyId);
+      const updated = this.propertyService.updateProperty(this.editingPropertyId, formData as any, this.currentUser.id);
+      console.log('✅ Property updated:', updated);
       this.editingPropertyId = null;
       this.goToProfile();
+    } else {
+      console.log('❌ Invalid page state for property submission');
     }
   }
 

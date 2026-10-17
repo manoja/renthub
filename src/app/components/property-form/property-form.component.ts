@@ -1,7 +1,7 @@
-import { Component, OnInit, Output, EventEmitter, Input } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Property, PropertyFormData, Amenity, PropertyType, LeaseType, PriceMode } from '../../models/property';
+import { Property, PropertyFormData, Amenity, PropertyType, LeaseType, PriceMode ,FurnishedStatus, TenantPreference } from '../../models/property';
 
 interface PropertyFormState {
   propertyType: PropertyType;
@@ -15,13 +15,14 @@ interface PropertyFormState {
   negotiable: boolean;
   leaseType: LeaseType;
   priceMode: PriceMode;
-  furnishedStatus: LeaseType;
+  furnishedStatus: FurnishedStatus;
   vegetarianPreference: boolean;
   amenities: Amenity[];
   title: string;
   description: string;
   landlordName: string;
   landlordEmail: string;
+  landlordPreference: TenantPreference;
   landlordPhone: string;
   photos: string[];
 }
@@ -33,9 +34,9 @@ interface PropertyFormState {
   templateUrl: './property-form.component.html',
   styleUrl: './property-form.component.scss'
 })
-export class PropertyFormComponent implements OnInit {
+export class PropertyFormComponent implements OnInit, OnChanges {
   @Input() property?: Property | null;
-  @Output() submit = new EventEmitter<PropertyFormData>();
+  @Output() formSubmit = new EventEmitter<PropertyFormData>();
   @Output() cancel = new EventEmitter<void>();
 
   formData: PropertyFormState = {
@@ -48,7 +49,7 @@ export class PropertyFormComponent implements OnInit {
     area: 0,
     expectedRent: 0,
     negotiable: false,
-    leaseType: 'Furnished',
+    leaseType: 'LongTerm',
     priceMode: 'Monthly',
     furnishedStatus: 'Furnished',
     vegetarianPreference: false,
@@ -57,6 +58,7 @@ export class PropertyFormComponent implements OnInit {
     description: '',
     landlordName: '',
     landlordEmail: '',
+    landlordPreference: 'Any',
     landlordPhone: '',
     photos: []
   };
@@ -88,13 +90,14 @@ export class PropertyFormComponent implements OnInit {
     'Penthouse',
     'Townhouse'
   ];
-
-  leaseTypeOptions: LeaseType[] = ['Furnished', 'Semi-Furnished', 'Unfurnished'];
+  leaseTypeOptions: LeaseType[] = ['LongTerm', 'ShortTerm', 'Both'];
+  furnishedOptions: FurnishedStatus[] = ['Furnished', 'Semi-Furnished', 'Unfurnished'];
+  tenantPreferenceOptions: TenantPreference[] = ['Any', 'Bachelors', 'Family'];
   priceOptions: PriceMode[] = ['Monthly', 'Yearly'];
 
   validationErrors: { [key: string]: string } = {};
 
-  ngOnInit(): void {
+  private initializeFormData(): void {
     if (this.property) {
       this.formData = {
         propertyType: this.property.propertyType,
@@ -115,10 +118,21 @@ export class PropertyFormComponent implements OnInit {
         description: this.property.description,
         landlordName: this.property.landlordName,
         landlordEmail: this.property.landlordEmail,
+        landlordPreference: this.property.landlordPreference,
         landlordPhone: this.property.landlordPhone,
         photos: [...this.property.photos]
       };
       this.descriptionChars = this.formData.description.length;
+    }
+  }
+
+  ngOnInit(): void {
+    this.initializeFormData();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['property']) {
+      this.initializeFormData();
     }
   }
 
@@ -212,6 +226,7 @@ export class PropertyFormComponent implements OnInit {
 
   validateForm(): boolean {
     this.validationErrors = {};
+    console.log('🔍 validateForm() checking...');
 
     // Required fields
     if (!this.formData.title.trim()) {
@@ -259,7 +274,9 @@ export class PropertyFormComponent implements OnInit {
       this.validationErrors['photos'] = 'At least one photo is required';
     }
 
-    return Object.keys(this.validationErrors).length === 0;
+    const isValid = Object.keys(this.validationErrors).length === 0;
+    console.log(isValid ? '✅ Validation PASSED' : '❌ Validation FAILED', this.validationErrors);
+    return isValid;
   }
 
   private isValidEmail(email: string): boolean {
@@ -292,49 +309,37 @@ export class PropertyFormComponent implements OnInit {
     console.log('=== Syncing Form Data from DOM ===');
     if (titleInput) {
       this.formData.title = titleInput.value;
-      console.log('Title from DOM:', titleInput.value);
     }
     if (descInput) {
       this.formData.description = descInput.value;
-      console.log('Description from DOM:', descInput.value);
     }
     if (buildingInput) {
       this.formData.buildingName = buildingInput.value;
-      console.log('Building from DOM:', buildingInput.value);
     }
     if (addressInput) {
       this.formData.address = addressInput.value;
-      console.log('Address from DOM:', addressInput.value);
     }
     if (cityInput) {
       this.formData.city = cityInput.value;
-      console.log('City from DOM:', cityInput.value);
     }
     if (stateInput) {
       this.formData.state = stateInput.value;
-      console.log('State from DOM:', stateInput.value);
     }
     if (areaInput) {
       this.formData.area = parseInt(areaInput.value) || 0;
-      console.log('Area from DOM:', areaInput.value);
     }
     if (rentInput) {
       this.formData.expectedRent = parseInt(rentInput.value) || 0;
-      console.log('Rent from DOM:', rentInput.value);
     }
     if (landlordNameInput) {
       this.formData.landlordName = landlordNameInput.value;
-      console.log('Landlord Name from DOM:', landlordNameInput.value);
     }
     if (landlordEmailInput) {
       this.formData.landlordEmail = landlordEmailInput.value;
-      console.log('Landlord Email from DOM:', landlordEmailInput.value);
     }
     if (landlordPhoneInput) {
       this.formData.landlordPhone = landlordPhoneInput.value;
-      console.log('Landlord Phone from DOM:', landlordPhoneInput.value);
     }
-    console.log('=== Final formData ===', JSON.stringify(this.formData, null, 2));
   }
 
   editForm(): void {
@@ -342,14 +347,13 @@ export class PropertyFormComponent implements OnInit {
   }
 
   confirmSubmit(): void {
+    
     if (this.validateForm()) {
       const formData: PropertyFormData = { ...this.formData };
-      console.log('=== Form Data Being Submitted ===');
-      console.log('Title:', formData.title);
-      console.log('City:', formData.city);
-      console.log('Rent:', formData.expectedRent);
-      console.log('Full Data:', JSON.stringify(formData, null, 2));
-      this.submit.emit(formData);
+      
+      this.formSubmit.emit(formData);
+    } else {
+      console.log('Validation Errors:', this.validationErrors);
     }
   }
 

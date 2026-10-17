@@ -28,6 +28,10 @@ export class PropertyService {
   }
 
   createProperty(formData: PropertyFormData, ownerId: number): Property {
+    console.log('💾 PropertyService.createProperty() called');
+    console.log('Owner ID:', ownerId);
+    console.log('Form Data:', JSON.stringify(formData, null, 2));
+    
     const property: Property = {
       id: `prop_${this.nextPropertyId++}`,
       ownerId,
@@ -36,9 +40,15 @@ export class PropertyService {
       updatedAt: new Date()
     };
 
+    console.log('🔧 Created property object:', JSON.stringify(property, null, 2));
+
     const current = this.properties$.value;
     this.properties$.next([...current, property]);
+    
+    console.log('💿 Saving to localStorage...');
     this.saveToStorage();
+    console.log('✅ Property saved to localStorage');
+    console.log('📊 Total properties in storage:', this.properties$.value.length);
 
     return property;
   }
@@ -97,8 +107,14 @@ export class PropertyService {
 
   private saveToStorage(): void {
     const properties = this.properties$.value;
+    console.log('📝 saveToStorage() writing to localStorage');
+    console.log('Properties to save:', properties.length);
     localStorage.setItem(this.storageKey, JSON.stringify(properties));
     localStorage.setItem(this.idKey, this.nextPropertyId.toString());
+    console.log('✅ localStorage updated');
+    console.log('🔍 Verification - Reading back from localStorage:');
+    const stored = localStorage.getItem(this.storageKey);
+    console.log('Stored properties:', stored ? JSON.parse(stored).length : 0);
   }
 
   private loadFromStorage(): void {
