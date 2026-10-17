@@ -27,10 +27,9 @@ export class PropertyService {
     return this.properties$.value.filter(p => p.ownerId === userId);
   }
 
-  createProperty(formData: PropertyFormData, ownerId: number): Property {
+  createProperty(formData: PropertyFormData, ownerId: number): Property | null {
     console.log('💾 PropertyService.createProperty() called');
     console.log('Owner ID:', ownerId);
-    console.log('Form Data:', JSON.stringify(formData, null, 2));
     
     const property: Property = {
       id: `prop_${this.nextPropertyId++}`,
@@ -45,12 +44,22 @@ export class PropertyService {
     const current = this.properties$.value;
     this.properties$.next([...current, property]);
     
-    console.log('💿 Saving to localStorage...');
-    this.saveToStorage();
-    console.log('✅ Property saved to localStorage');
-    console.log('📊 Total properties in storage:', this.properties$.value.length);
-
-    return property;
+    try {
+      console.log('💿 Saving to localStorage...');
+      this.saveToStorage();
+      console.log('✅ Property saved to localStorage');
+      console.log('📊 Total properties in storage:', this.properties$.value.length);
+      return property;
+    } catch (error: any) {
+      if (error.name === 'QuotaExceededError') {
+        console.error('❌ localStorage quota exceeded. Rolling back...');
+        // Rollback: Remove the property we just added
+        this.properties$.next(current);
+        alert('Storage quota exceeded. Please delete some properties or photos to free up space.');
+        return null;
+      }
+      throw error;
+    }
   }
 
   updateProperty(id: string, formData: PropertyFormData, userId: number): Property | null {
@@ -109,12 +118,21 @@ export class PropertyService {
     const properties = this.properties$.value;
     console.log('📝 saveToStorage() writing to localStorage');
     console.log('Properties to save:', properties.length);
-    localStorage.setItem(this.storageKey, JSON.stringify(properties));
-    localStorage.setItem(this.idKey, this.nextPropertyId.toString());
-    console.log('✅ localStorage updated');
-    console.log('🔍 Verification - Reading back from localStorage:');
-    const stored = localStorage.getItem(this.storageKey);
-    console.log('Stored properties:', stored ? JSON.parse(stored).length : 0);
+    
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(properties));
+      localStorage.setItem(this.idKey, this.nextPropertyId.toString());
+      console.log('✅ localStorage updated');
+      console.log('🔍 Verification - Reading back from localStorage:');
+      const stored = localStorage.getItem(this.storageKey);
+      console.log('Stored properties:', stored ? JSON.parse(stored).length : 0);
+    } catch (error: any) {
+      if (error.name === 'QuotaExceededError') {
+        console.error('❌ QuotaExceededError: localStorage full', error);
+        throw error; // Propagate to caller for handling
+      }
+      throw error;
+    }
   }
 
   private loadFromStorage(): void {

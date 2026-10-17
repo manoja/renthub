@@ -318,6 +318,10 @@ export class App implements OnInit, OnDestroy {
     if (this.currentPage === 'create') {
       console.log('📝 Creating new property for user:', this.currentUser.id);
       const property = this.propertyService.createProperty(formData as any, this.currentUser.id);
+      if (property === null) {
+        console.log('❌ Property creation failed (quota exceeded)');
+        return; // Don't navigate on failure
+      }
       console.log('✅ Property created:', property);
       this.goToProfile();
     } else if (this.currentPage === 'edit' && this.editingPropertyId) {

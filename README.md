@@ -79,7 +79,8 @@ A modern, fully-functional Angular 20 web application for discovering, listing, 
 - Fully responsive layout
 - Touch-friendly buttons and controls
 - Optimized for all screen sizes
-
+✅ **Bonus points  Design**
+-Preview and save
 ---
 
 ## 🛠 Tech Stack
@@ -99,9 +100,9 @@ A modern, fully-functional Angular 20 web application for discovering, listing, 
 
 ### GitHub Repository
 ```
-https://github.com/yourusername/renthub
+https://github.com/manoja/renthub
 ```
-(Without node_modules folder - add to .gitignore)
+(Without node_modules folder )
 
 ### Deployed Application
 ```
@@ -112,22 +113,18 @@ https://renthubbasic.netlify.app/
 
 ## 👤 User Credentials
 
-### Test Account 1 (Landlord)
+### Test Account 1
 ```
 Email: john@example.com
 Password: Test@123
 ```
 
-### Test Account 2 (Tenant)
+### Test Account 2 
 ```
-Email: manoja.asus@gmail.com
+Email: manoja.nagarro@gmail.com
 Password: Test@123
 ```
 
-### Demo Account
-```
-Email: demo@renthub.com
-Password: Demo@1234
 ```
 
 ---
@@ -141,7 +138,7 @@ Password: Demo@1234
 
 ### Step 1: Clone Repository
 ```bash
-git clone https://github.com/yourusername/renthub.git
+git clone ""
 cd renthub
 ```
 

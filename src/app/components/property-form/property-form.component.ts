@@ -196,6 +196,12 @@ export class PropertyFormComponent implements OnInit, OnChanges {
   onPhotoSelected(event: any): void {
     const files = event.target.files;
     if (files) {
+      // Check photo limit (max 3)
+      if (this.formData.photos.length + files.length > 3) {
+        alert('Maximum 3 photos allowed. Please remove some photos first.');
+        return;
+      }
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
 
@@ -205,7 +211,7 @@ export class PropertyFormComponent implements OnInit, OnChanges {
           continue;
         }
 
-        // Validate file size (max 5MB)
+        // Validate file size (max 5MB original)
         if (file.size > 5 * 1024 * 1024) {
           alert('Image size must be less than 5MB');
           continue;
@@ -213,11 +219,51 @@ export class PropertyFormComponent implements OnInit, OnChanges {
 
         const reader = new FileReader();
         reader.onload = (e: any) => {
-          this.formData.photos.push(e.target.result);
+          // Compress image using Canvas (async)
+          this.compressImage(e.target.result).then(compressedDataUrl => {
+            this.formData.photos.push(compressedDataUrl);
+          });
         };
         reader.readAsDataURL(file);
       }
     }
+  }
+
+  private compressImage(dataUrl: string): Promise<string> {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const img = document.createElement('img');
+      
+      img.onload = () => {
+        // Calculate dimensions (max 1200px)
+        const maxDim = 1200;
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > height) {
+          if (width > maxDim) {
+            height = (height * maxDim) / width;
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = (width * maxDim) / height;
+            height = maxDim;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        // Convert to JPEG with quality 0.7
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        resolve(compressedDataUrl);
+      };
+      
+      img.src = dataUrl;
+    });
   }
 
   removePhoto(index: number): void {
