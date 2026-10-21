@@ -239,4 +239,23 @@ export class PropertyListingComponent implements OnInit {
     this.sanitizedImageCache.set(imageUrl, safeUrl);
     return safeUrl;
   }
+
+  getUpdatedTimeLabel(updatedAt: Date): string {
+    const now = new Date();
+    const updated = new Date(updatedAt);
+    const diffMs = now.getTime() - updated.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+
+    if (diffDays === 0 && diffHours < 24) {
+      return 'Updated today';
+    } else if (diffDays === 1) {
+      return 'Updated yesterday';
+    } else if (diffDays < 30) {
+      return `Updated ${diffDays} days ago`;
+    } else {
+      const diffMonths = Math.floor(diffDays / 30);
+      return `Updated ${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
+    }
+  }
 }
