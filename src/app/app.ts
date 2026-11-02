@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router, ActivatedRoute } from '@angular/router';
 import { PropertyFormComponent } from './components/property-form/property-form.component';
 import { PropertyDetailsComponent } from './components/property-details/property-details.component';
 import { FavoritesComponent } from './components/favorites/favorites.component';
@@ -11,7 +12,8 @@ import { User } from './models/user';
 import { PropertyService } from './services/property.service';
 import { AuthService } from './services/auth.service';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { takeUntil, filter } from 'rxjs/operators';
+import { NavigationEnd } from '@angular/router';
 
 @Component({
   selector: 'app-root',
@@ -43,6 +45,7 @@ export class App implements OnInit, OnDestroy {
   // Auth Modal State
   protected isAuthModalOpen: boolean = false;
   protected authMode: 'login' | 'register' = 'login';
+  protected returnUrl: string | null = null;
 
   // Login Form Data
   protected loginEmail: string = '';
@@ -61,7 +64,9 @@ export class App implements OnInit, OnDestroy {
 
   constructor(
     private propertyService: PropertyService,
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router,
+    private activatedRoute: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -77,11 +82,71 @@ export class App implements OnInit, OnDestroy {
       .subscribe(user => {
         this.currentUser = user;
       });
+
+    // Sync with router navigation using NavigationEnd events
+    this.router.events
+      .pipe(
+        filter(event => event instanceof NavigationEnd),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(() => {
+        const fullUrl = this.router.url.split('?')[0]; // Remove query params
+        const path = fullUrl.substring(1) || ''; // Remove leading slash
+        this.updatePageFromRoute(path);
+      });
+
+    // Handle query parameters for login redirect
+    this.activatedRoute.queryParams
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(params => {
+        this.returnUrl = params['returnUrl'] || null;
+      });
+
+    // Set initial page based on current route
+    const fullUrl = this.router.url.split('?')[0];
+    const path = fullUrl.substring(1) || '';
+    this.updatePageFromRoute(path);
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private updatePageFromRoute(path: string): void {
+    if (!path || path === '' || path === 'home') {
+      this.currentPage = 'home';
+      this.isAuthModalOpen = false;
+    } else if (path === 'listings') {
+      this.currentPage = 'listings';
+      this.isAuthModalOpen = false;
+    } else if (path === 'login') {
+      // For login, show the modal but keep a default page in background
+      this.currentPage = 'listings';
+      this.openAuthModal('login');
+    } else if (path === 'create') {
+      this.currentPage = 'create';
+      this.isAuthModalOpen = false;
+    } else if (path === 'profile') {
+      this.currentPage = 'profile';
+      this.isAuthModalOpen = false;
+    } else if (path === 'favorites') {
+      this.currentPage = 'favorites';
+      this.isAuthModalOpen = false;
+    } else if (path === 'edit') {
+      this.currentPage = 'edit';
+      this.isAuthModalOpen = false;
+    } else if (path.startsWith('property/')) {
+      this.currentPage = 'details';
+      this.isAuthModalOpen = false;
+      const id = path.split('/')[1];
+      if (id) {
+        this.selectedPropertyId = id;
+      }
+    } else {
+      this.currentPage = 'home';
+      this.isAuthModalOpen = false;
+    }
   }
 
   protected openAuthModal(mode: 'login' | 'register'): void {
@@ -119,6 +184,13 @@ export class App implements OnInit, OnDestroy {
     }
 
     this.closeAuthModal();
+
+    // Redirect to returnUrl or home
+    if (this.returnUrl) {
+      this.router.navigateByUrl(this.returnUrl);
+    } else {
+      this.router.navigate(['/']);
+    }
   }
 
   protected handleRegister(): void {
@@ -157,7 +229,7 @@ export class App implements OnInit, OnDestroy {
   protected handleLogout(): void {
     this.authService.logout();
     this.resetForms();
-    this.currentPage = 'home';
+    this.router.navigate(['/']);
   }
 
   private validateLoginForm(): boolean {
@@ -240,11 +312,11 @@ export class App implements OnInit, OnDestroy {
 
   // Navigation Methods
   protected goHome(): void {
-    this.currentPage = 'home';
+    this.router.navigate(['/']);
   }
 
   protected goToListings(): void {
-    this.currentPage = 'listings';
+    this.router.navigate(['/listings']);
   }
 
   protected goToProfile(): void {
@@ -252,7 +324,7 @@ export class App implements OnInit, OnDestroy {
       this.openAuthModal('login');
       return;
     }
-    this.currentPage = 'profile';
+    this.router.navigate(['/profile']);
   }
 
   protected goToCreateListing(): void {
@@ -261,7 +333,7 @@ export class App implements OnInit, OnDestroy {
       return;
     }
     this.editingPropertyId = null;
-    this.currentPage = 'create';
+    this.router.navigate(['/create']);
   }
 
   protected goToEditListing(propertyId: string): void {
@@ -270,7 +342,7 @@ export class App implements OnInit, OnDestroy {
       return;
     }
     this.editingPropertyId = propertyId;
-    this.currentPage = 'edit';
+    this.router.navigate(['/edit', propertyId]);
   }
 
   protected getEditingProperty() {
@@ -281,8 +353,7 @@ export class App implements OnInit, OnDestroy {
   }
 
   protected goToPropertyDetails(propertyId: string): void {
-    this.selectedPropertyId = propertyId;
-    this.currentPage = 'details';
+    this.router.navigate(['/property', propertyId]);
   }
 
   protected goToFavorites(): void {
@@ -290,7 +361,7 @@ export class App implements OnInit, OnDestroy {
       this.openAuthModal('login');
       return;
     }
-    this.currentPage = 'favorites';
+    this.router.navigate(['/favorites']);
   }
 
   protected handlePropertySubmit(formData: PropertyFormData): void {
@@ -323,13 +394,13 @@ export class App implements OnInit, OnDestroy {
         return; // Don't navigate on failure
       }
       console.log('✅ Property created:', property);
-      this.goToProfile();
+      this.router.navigate(['/profile']);
     } else if (this.currentPage === 'edit' && this.editingPropertyId) {
       console.log('✏️ Updating property:', this.editingPropertyId);
       const updated = this.propertyService.updateProperty(this.editingPropertyId, formData as any, this.currentUser.id);
       console.log('✅ Property updated:', updated);
       this.editingPropertyId = null;
-      this.goToProfile();
+      this.router.navigate(['/profile']);
     } else {
       console.log('❌ Invalid page state for property submission');
     }
@@ -338,9 +409,9 @@ export class App implements OnInit, OnDestroy {
   protected handlePropertyFormCancel(): void {
     this.editingPropertyId = null;
     if (this.currentPage === 'create') {
-      this.goHome();
+      this.router.navigate(['/']);
     } else if (this.currentPage === 'edit') {
-      this.goToProfile();
+      this.router.navigate(['/profile']);
     }
   }
 }
